@@ -1,0 +1,114 @@
+module cusolver_modules
+use iso_c_binding
+use cudafor
+use cublas
+
+type cusolverDnHandle
+    type(c_ptr) :: handle
+end type cusolverDnHandle
+
+type cusolverDnParams
+  type(c_ptr) :: params
+end type
+
+enum, bind(c)
+    enumerator :: CUSOLVERDN_GETRF = 0
+end enum
+
+type, bind(c) :: cudaDataType
+    integer(4) :: ctyp
+end type
+
+ interface
+     integer(c_int) function cusolverDnCreate(handle) &
+          bind(C,name='cusolverDnCreate')
+       import cusolverDnHandle
+       type(cusolverDnHandle) :: handle
+     end function cusolverDnCreate
+  end interface
+
+  interface
+     integer(c_int) function cusolverDnDestroy(handle) &
+          bind(C,name='cusolverDnDestroy')
+       import cusolverDnHandle
+       type(cusolverDnHandle), value :: handle
+     end function cusolverDnDestroy
+  end interface
+
+  interface
+     integer(c_int) function cusolverDnSetStream(handle, stream) &
+          bind(C,name='cusolverDnSetStream')
+       use cudafor
+       import cusolverDnHandle
+       type(cusolverDnHandle), value :: handle
+       integer(cuda_stream_kind), value :: stream
+     end function cusolverDnSetStream
+  end interface
+
+!dgetrf
+interface
+integer function cusolverDnXgetrf_buffersize(handle, &
+    params, m, n, dataTypeA, A, lda, computeType, &
+    workspaceInBytesOnDevice, workspaceInBytesOnHost)
+	use iso_c_binding
+	import cusolverDnHandle
+	import cusolverDnParams
+	import cudaDataType
+    type(cusolverDnHandle) :: handle
+    type(cusolverDnParams) :: params
+    integer(8) :: m, n, lda
+    type(cudaDataType) :: dataTypeA, computeType
+    real, device, dimension(lda,*) :: A
+    integer(8) :: workspaceInBytesOnDevice, workspaceInBytesOnHost
+end function
+end interface
+
+
+
+interface
+
+integer function cusolverDnXgetrf(handle, &
+    params, m, n, dataTypeA, A, lda, devipiv, computeType, &
+    bufferOnDevice, workspaceInBytesOnDevice, &
+    bufferOnHost, workspaceInBytesOnHost, devinfo)
+	use iso_c_binding
+	import cusolverDnHandle
+	import cusolverDnParams
+	import cudaDataType
+    type(cusolverDnHandle) :: handle
+    type(cusolverDnParams) :: params
+    integer(8) :: n, m, lda
+    type(cudaDataType) :: dataTypeA, computeType
+    real, device, dimension(lda,*) :: A
+    integer(8), device, dimension(*), intent(out) :: devipiv
+    integer(8) :: workspaceInBytesOnDevice, workspaceInBytesOnHost
+    integer(1), device :: bufferOnDevice(workspaceInBytesOnDevice)
+    integer(1)         :: bufferOnHost(workspaceInBytesOnHost)
+    integer(4), device, intent(out) :: devinfo
+end function
+end interface
+
+!dgetrs
+
+interface
+
+integer function cusolverDnXpotrs(handle, &
+    params, trans, n, nrhs, dataTypeA, A, lda, devipiv, &
+    dataTypeB, B, ldb, devinfo)
+	use iso_c_binding
+	import cusolverDnHandle
+	import cusolverDnParams
+	import cudaDataType
+    type(cusolverDnHandle) :: handle
+    type(cusolverDnParams) :: params
+    integer(4) :: trans
+    integer(8) :: n, nrhs, lda, ldb
+    type(cudaDataType) :: dataTypeA, dataTypeB
+    real, device, dimension(lda,*) :: A
+    integer(8), device, dimension(*), intent(in) :: devipiv
+    real, device, dimension(ldb,*) :: B
+    integer(4), device, intent(out) :: devinfo
+end function
+
+end interface
+end module

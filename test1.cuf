@@ -1,0 +1,79 @@
+program test_dgetrfrs
+	use cusolver_modules
+	
+
+	implicit none
+
+	integer*8,parameter::n=3
+	real*8,dimension(n,n)::A
+	real*8,dimension(n)::b,y
+	real*8,device,dimension(n,n)::A_d
+	real*8,device,dimension(n)::b_d
+	integer::i,j
+	
+type(cusolverDnHandle) :: h
+type(cusolverDnParams) :: params1
+integer(8)::lda
+type(cudaDataType):: dataTypeA, computeType
+integer(8), device,dimension(n)::devipiv
+integer(8) :: workspaceInBytesOnDevice, workspaceInBytesOnHost
+integer(1),allocatable,device,dimension(:) :: bufferOnDevice
+integer(1),allocatable,dimension(:) :: bufferOnHost
+integer(4), device:: devinfo
+integer(4)::istat
+
+      A=0.0d0; b=0.0d0; y=0.0d0;
+      lda=n
+
+istat= cusolverDnXgetrf_buffersize(h,params1,n, n,1, A, lda, CUDA_R_64F, &
+    workspaceInBytesOnDevice, workspaceInBytesOnHost)
+print*,workspaceInBytesOnDevice, workspaceInBytesOnHost
+
+!allocate(bufferOnDevice(workspaceInBytesOnDevice),bufferOnHost(workspaceInBytesOnHost))
+
+     do i=1,n
+      do j=1,n
+        A(i,j)=2*(i+j)**2
+      enddo
+     y(i)=sum(A(i,:))
+     enddo
+
+     call printer(A,n,n)
+
+     !DGETRF
+     b=y
+
+!     call dgetrf(n,n,A,lda,ipiv,info )
+
+
+
+
+
+
+
+
+
+!     if(info==0) call dgetrs('No transpose',n,nrhs,A,lda,ipiv,b,ldb,info)
+!     print*,"dgetrf+dgetrs"
+!     print*,"info=",info
+!     print*,b
+
+end program
+
+subroutine printer(matrix,n,m)
+
+    implicit none
+    integer,intent(IN)::n,m
+    real*8,dimension(n,m),intent(IN)::matrix
+    integer::i,j
+
+    11 format(f10.5,1x)
+
+    do i=1,n
+        do  j=1,m
+            write(*,FMT=11,advance='no')matrix(i,j)
+        enddo
+    write(*,FMT=11,advance='yes')
+    enddo
+
+end subroutine
